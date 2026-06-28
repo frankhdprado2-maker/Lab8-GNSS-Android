@@ -7,11 +7,11 @@ ksp {
     arg("room.generateKotlin", "true")    // Room emite código Kotlin puro
 }
 android {
-    namespace = "com.example.sanmarcosstore"
+    namespace = "com.lab.lab4"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.sanmarcosstore"
+        applicationId = "com.lab.lab4"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
