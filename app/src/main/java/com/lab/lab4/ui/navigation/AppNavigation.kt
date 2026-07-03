@@ -2,9 +2,7 @@ package com.lab.lab4.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Place
@@ -18,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,36 +28,85 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import com.lab.lab4.Lab4App
 import com.lab.lab4.ui.screens.AudioScreen
 import com.lab.lab4.ui.screens.GpsScreen
 import com.lab.lab4.ui.screens.LoginScreen
 import com.lab.lab4.ui.screens.MediaScreen
-import com.lab.lab4.ui.screens.NotificationsScreen
 import com.lab.lab4.ui.screens.ProfileScreen
-import com.lab.lab4.ui.screens.SyncScreen
+import com.lab.lab4.ui.screens.RegisterScreen
 import com.lab.lab4.ui.viewmodel.GpsViewModel
 import com.lab.lab4.ui.viewmodel.SessionViewModel
 
+private const val ROUTE_AUTH = "auth"
+private const val ROUTE_LOGIN = "login"
+private const val ROUTE_REGISTER = "register"
+private const val ROUTE_MAIN = "main"
+
 sealed class Ruta(val ruta: String, val etiqueta: String, val icono: ImageVector) {
     data object Gps : Ruta("gps", "GNSS", Icons.Default.Place)
-    data object Media : Ruta("media", "Multimedia", Icons.Default.PhotoCamera)
+    data object Media : Ruta("media", "Media", Icons.Default.PhotoCamera)
     data object Audio : Ruta("audio", "Audio", Icons.Default.Mic)
-    data object Sync : Ruta("sync", "Sync", Icons.Default.CloudSync)
-    data object Notif : Ruta("notif", "Notif", Icons.Default.Notifications)
     data object Profile : Ruta("profile", "Perfil", Icons.Default.Person)
+}
+
+@Composable
+fun AppNavigation(sessionViewModel: SessionViewModel) {
+    val isLoggedIn by sessionViewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val rootNavController = rememberNavController()
+    val rootBackStack by rootNavController.currentBackStackEntryAsState()
+    val currentDestination = rootBackStack?.destination
+    val isInAuthGraph = currentDestination?.hierarchy?.any { it.route == ROUTE_AUTH } == true
+    val isInMainGraph = currentDestination?.hierarchy?.any { it.route == ROUTE_MAIN } == true
+
+    LaunchedEffect(isLoggedIn, isInAuthGraph, isInMainGraph) {
+        if (isLoggedIn && !isInMainGraph) {
+            rootNavController.navigate(ROUTE_MAIN) {
+                popUpTo(ROUTE_AUTH) { inclusive = true }
+                launchSingleTop = true
+            }
+        } else if (!isLoggedIn && !isInAuthGraph) {
+            rootNavController.navigate(ROUTE_AUTH) {
+                popUpTo(ROUTE_MAIN) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    NavHost(
+        navController = rootNavController,
+        startDestination = ROUTE_AUTH
+    ) {
+        navigation(
+            startDestination = ROUTE_LOGIN,
+            route = ROUTE_AUTH
+        ) {
+            composable(ROUTE_LOGIN) {
+                LoginScreen(
+                    sessionViewModel = sessionViewModel,
+                    onRegisterNavigate = { rootNavController.navigate(ROUTE_REGISTER) }
+                )
+            }
+            composable(ROUTE_REGISTER) {
+                RegisterScreen(
+                    onBack = { rootNavController.popBackStack() },
+                    onSubmit = { email, password, onResult ->
+                        sessionViewModel.register(email, password, onResult)
+                    }
+                )
+            }
+        }
+
+        composable(ROUTE_MAIN) {
+            MainScaffold(sessionViewModel = sessionViewModel)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(sessionViewModel: SessionViewModel) {
-    val isLoggedIn by sessionViewModel.isLoggedIn.collectAsStateWithLifecycle()
-
-    if (!isLoggedIn) {
-        LoginScreen(sessionViewModel = sessionViewModel)
-        return
-    }
-
+private fun MainScaffold(sessionViewModel: SessionViewModel) {
     val context = LocalContext.current
     val app = context.applicationContext as Lab4App
     val gpsViewModel: GpsViewModel = viewModel(
@@ -68,16 +116,14 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStack?.destination
-    val tabs = listOf(Ruta.Gps, Ruta.Media, Ruta.Audio, Ruta.Sync, Ruta.Notif, Ruta.Profile)
+    val tabs = listOf(Ruta.Gps, Ruta.Media, Ruta.Audio, Ruta.Profile)
 
     val title = when (currentDestination?.route) {
         Ruta.Gps.ruta -> "GNSS"
-        Ruta.Media.ruta -> "Multimedia"
+        Ruta.Media.ruta -> "Media"
         Ruta.Audio.ruta -> "Audio"
-        Ruta.Sync.ruta -> "Sync"
-        Ruta.Notif.ruta -> "Notificaciones"
         Ruta.Profile.ruta -> "Perfil"
-        else -> "Lab 5"
+        else -> "Lab 7"
     }
 
     Scaffold(
@@ -125,12 +171,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             }
             composable(Ruta.Audio.ruta) {
                 AudioScreen()
-            }
-            composable(Ruta.Sync.ruta) {
-                SyncScreen()
-            }
-            composable(Ruta.Notif.ruta) {
-                NotificationsScreen()
             }
             composable(Ruta.Profile.ruta) {
                 ProfileScreen(

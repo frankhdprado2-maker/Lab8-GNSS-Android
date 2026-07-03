@@ -28,7 +28,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Lab4">
+        android:theme="@style/Theme.Lab4"
+        android:usesCleartextTraffic="true">
 
         <service
             android:name="com.lab.lab4.services.GpsCaptureService"
