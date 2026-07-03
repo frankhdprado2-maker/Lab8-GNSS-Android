@@ -84,7 +84,8 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
         ) {
             composable(ROUTE_LOGIN) {
                 LoginScreen(
-                    sessionViewModel = sessionViewModel,
+                    onSubmit = sessionViewModel::login,
+                    onGoogleLogin = sessionViewModel::loginWithGoogle,
                     onRegisterNavigate = { rootNavController.navigate(ROUTE_REGISTER) }
                 )
             }

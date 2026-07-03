@@ -89,4 +89,9 @@ dependencies {
     // ── Coil (Carga de imágenes en el perfil de actividad si fuera necesario)
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Authentication
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 }
