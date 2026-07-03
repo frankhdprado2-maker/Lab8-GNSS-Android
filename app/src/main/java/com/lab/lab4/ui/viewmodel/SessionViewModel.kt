@@ -1,6 +1,7 @@
 package com.lab.lab4.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lab.lab4.data.session.SessionManager
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,6 +43,13 @@ class SessionViewModel(private val sessionManager: SessionManager) : ViewModel()
     fun logout() {
         viewModelScope.launch {
             sessionManager.logout()
+        }
+    }
+
+    class Factory(private val sessionManager: SessionManager) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return SessionViewModel(sessionManager) as T
         }
     }
 }

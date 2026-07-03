@@ -1,6 +1,7 @@
 package com.lab.lab4.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.lab.lab4.data.local.entity.GpsGoogleEntity
 import com.lab.lab4.data.local.entity.GpsSensorsEntity
@@ -56,4 +57,11 @@ class GpsViewModel(private val gpsRepository: GpsRepository) : ViewModel() {
             SharingStarted.WhileSubscribed(5_000),
             emptyList()
         )
+
+    class Factory(private val gpsRepository: GpsRepository) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return GpsViewModel(gpsRepository) as T
+        }
+    }
 }

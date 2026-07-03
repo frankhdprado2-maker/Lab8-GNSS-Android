@@ -21,7 +21,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lab.lab4.Lab4App
 import com.lab.lab4.ui.viewmodel.SessionViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 // Definición de las 3 sub-vistas internas del perfil usando sealed class
 private sealed class ProfileViewState {
     object Menu       : ProfileViewState()
@@ -194,25 +198,87 @@ private fun MyProfileScreen(sessionVm: SessionViewModel, username: String, onBac
 // ── 11.3 SUB-PANTALLA: LISTA DE ACTIVIDAD (REQUERIDA POR EL CHECKLIST) ──
 @Composable
 private fun MyActivityScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val app = context.applicationContext as Lab4App
+    val googlePoints by app.gpsRepository.googlePoints.collectAsStateWithLifecycle(initialValue = emptyList())
+    val sensorsPoints by app.gpsRepository.sensorsPoints.collectAsStateWithLifecycle(initialValue = emptyList())
+    val mediaItems by app.mediaRepository.allMedia.collectAsStateWithLifecycle(initialValue = emptyList())
+    val audioItems by app.audioRepository.allAudios.collectAsStateWithLifecycle(initialValue = emptyList())
+    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()) }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Regresar") }
             Text("Historial de Actividad", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
 
-        // En este paso se renderiza la vista estática unificada requerida
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-        ) {
-            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "No hay archivos multimedia registrados en este ciclo.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item { ActivitySectionTitle("GNSS Google", googlePoints.size) }
+            items(googlePoints.take(5), key = { "google_${it.id}" }) { item ->
+                ActivityRow("Lat ${item.latitude}, Lon ${item.longitude}", dateFormat.format(Date(item.timestamp)))
+            }
+
+            item { ActivitySectionTitle("GNSS Sensores", sensorsPoints.size) }
+            items(sensorsPoints.take(5), key = { "sensor_${it.id}" }) { item ->
+                val location = if (item.latitude != null && item.longitude != null) {
+                    "Lat ${item.latitude}, Lon ${item.longitude}"
+                } else {
+                    "Sin fijación satelital"
+                }
+                ActivityRow(location, dateFormat.format(Date(item.timestamp)))
+            }
+
+            item { ActivitySectionTitle("Fotos y videos", mediaItems.size) }
+            items(mediaItems.take(8), key = { "media_${it.id}" }) { item ->
+                ActivityRow("${item.type} - ${item.sizeBytes / 1024L} KB", dateFormat.format(Date(item.timestamp)))
+            }
+
+            item { ActivitySectionTitle("Audios", audioItems.size) }
+            items(audioItems.take(8), key = { "audio_${it.id}" }) { item ->
+                ActivityRow("${item.format.uppercase()} - ${item.durationMs / 1000L}s", dateFormat.format(Date(item.timestamp)))
+            }
+
+            if (googlePoints.isEmpty() && sensorsPoints.isEmpty() && mediaItems.isEmpty() && audioItems.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                    ) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "No hay actividad registrada todavía.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ActivitySectionTitle(title: String, count: Int) {
+    Text(
+        text = "$title ($count)",
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
+private fun ActivityRow(primary: String, secondary: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        ListItem(
+            headlineContent = { Text(primary) },
+            supportingContent = { Text(secondary) },
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        )
     }
 }
 
